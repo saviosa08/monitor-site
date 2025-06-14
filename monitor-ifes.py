@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import os
+import re
 
 URL = "https://www.ifes.edu.br/processosseletivos/servidores/item/3127-concurso-publico-01-2024-docentes"
 ARQUIVO_DATA = "ultima_data_ifes.txt"
@@ -35,15 +36,19 @@ def get_maior_data():
     soup = BeautifulSoup(resp.text, "html.parser")
 
     datas = []
+    pattern = r"\b\d{2}/\d{2}/\d{4}\b"  # regex para dd/mm/yyyy
+
     for li in soup.find_all("li"):
-        texto = li.get_text(strip=True)
-        data_str = texto[:10]  # espera data no formato dd/mm/yyyy no início
-        try:
-            data = datetime.strptime(data_str, "%d/%m/%Y").date()
-            print(f"Data encontrada: {data} - texto: {texto}")  # Debug
-            datas.append((data, texto))
-        except ValueError:
-            continue
+        texto = li.get_text(" ", strip=True)  # extrai texto com espaço entre tags para facilitar regex
+        match = re.search(pattern, texto)
+        if match:
+            data_str = match.group()
+            try:
+                data = datetime.strptime(data_str, "%d/%m/%Y").date()
+                print(f"Data encontrada: {data} - texto: {texto}")  # debug
+                datas.append((data, texto))
+            except ValueError:
+                continue
 
     if not datas:
         return None, None
