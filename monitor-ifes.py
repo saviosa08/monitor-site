@@ -35,17 +35,15 @@ def get_maior_data():
     soup = BeautifulSoup(resp.text, "html.parser")
 
     datas = []
-    for a in soup.find_all("a"):
-        texto = a.get_text(strip=True)
-        try:
-            partes = texto.split()
-            for parte in partes:
-                if len(parte) == 10 and parte[2] == '/' and parte[5] == '/':
-                    data = datetime.strptime(parte, "%d/%m/%Y").date()
-                    datas.append((data, texto))
-                    break
-        except:
-            continue
+for a in soup.find_all("a"):
+    texto = a.get_text(strip=True)
+    data_str = texto[:10]
+    try:
+        data = datetime.strptime(data_str, "%d/%m/%Y").date()
+        print(f"Data encontrada: {data} - texto: {texto}")  # Debug
+        datas.append((data, texto))
+    except ValueError:
+        continue
 
     if not datas:
         return None, None
