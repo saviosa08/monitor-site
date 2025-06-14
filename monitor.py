@@ -20,12 +20,8 @@ def enviar_telegram(msg):
     requests.post(url, data=data)
 
 def ler_estado():
-     try:
-        with open("ultima_publicacao.txt", "r") as f:
-            return f.read().strip()
-    except FileNotFoundError:
-        return ""
-
+    return "07/04/2025 - 19:08\nComunicado 01 - Envio de Documentos - PROCESSO SELETIVO SIMPLIFICADO/TJES Nº 01/2025"
+    
 def salvar_estado(pub):
     with open("ultima_publicacao.txt", "w") as f:
         f.write(pub)
