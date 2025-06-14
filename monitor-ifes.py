@@ -30,42 +30,44 @@ def enviar_telegram(mensagem):
     resp = requests.post(url, data=data)
     return resp.ok
 
-def buscar_datas():
-    response = requests.get(URL)
-    soup = BeautifulSoup(response.text, "html.parser")
-    datas = []
+def get_maior_data():
+    resp = requests.get(URL)
+    soup = BeautifulSoup(resp.text, "html.parser")
 
-    # Extrai datas de todas as tags <a>
+    datas = []
     for a in soup.find_all("a"):
         texto = a.get_text(strip=True)
-        # Tenta extrair datas no formato dd/mm/yyyy
         try:
-            # Pode ter outras coisas junto, tenta achar a parte de data com split e regex
             partes = texto.split()
             for parte in partes:
                 if len(parte) == 10 and parte[2] == '/' and parte[5] == '/':
                     data = datetime.strptime(parte, "%d/%m/%Y").date()
-                    datas.append(data)
+                    datas.append((data, texto))
+                    break
         except:
             continue
-    return datas
+
+    if not datas:
+        return None, None
+
+    return max(datas, key=lambda x: x[0])
 
 def main():
-    datas_encontradas = buscar_datas()
-    if not datas_encontradas:
+    maior_data, texto = get_maior_data()
+    if maior_data is None:
         print("Nenhuma data encontrada no site.")
         return
 
-    maior_data_site = max(datas_encontradas)
     ultima_data = ler_ultima_data()
 
-    if maior_data_site > ultima_data:
-        mensagem = (f"🚨 Nova data detectada no IFES:\n<b>{maior_data_site.strftime('%d/%m/%Y')}</b>\n"
+    if maior_data > ultima_data:
+        mensagem = (f"🚨 Nova data detectada no IFES:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
+                    f"Descrição: {texto}\n"
                     f"Acesse: {URL}")
         sucesso = enviar_telegram(mensagem)
         if sucesso:
             print("Mensagem enviada com sucesso.")
-            salvar_data(maior_data_site)
+            salvar_data(maior_data)
         else:
             print("Erro ao enviar mensagem no Telegram.")
     else:
