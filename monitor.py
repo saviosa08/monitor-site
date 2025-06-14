@@ -33,6 +33,7 @@ def salvar_estado(pub):
 def verificar():
     ultima = get_ultima_publicacao()
     if not ultima:
+        enviar_telegram(f"📢 Sem nova publicacao :(!\n\n{ultima}\n\n{URL}")
         return
     anterior = ler_estado()
     if ultima != anterior:
