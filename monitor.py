@@ -60,12 +60,10 @@ def verificar():
 
     data_salva = ler_ultima_data_salva()
     if data_site > data_salva:
-        mensagem = f"📢 Nova publicação encontrada!\n\n📅 <b>{data_site.strftime('%d/%m/%Y')}</b>\n📝 {texto}\n\n🔗 {URL}"
+        mensagem = f"📢 Nova publicação encontrada em <b>{data_site.strftime('%d/%m/%Y')}</b>📅\n\n🔗 {URL}"
         enviar_telegram(mensagem)
         salvar_data(data_site)
         print("Mensagem enviada.")
-    else:
-        print("Sem novas publicações.")
 
 if __name__ == "__main__":
     verificar()
