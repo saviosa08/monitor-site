@@ -10,26 +10,20 @@ TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 def get_maior_data():
     resp = requests.get(URL)
     soup = BeautifulSoup(resp.text, "html.parser")
-    painels = soup.select(".panel.panel-default")
+    
+    # Busca todas as tags <small> e elementos com classe 'small'
+    elementos_small = soup.find_all(lambda tag: tag.name == "small" or "small" in tag.get("class", []))
+    
     datas = []
 
-    for painel in painels:
-        cabecalho = painel.select_one(".panel-heading")
-        if not cabecalho:
-            continue
-
-        small = cabecalho.find("small")
-        if not small:
-            small = cabecalho.find(class_="small")
-        if not small:
-            continue
-
-        texto_data = small.text.strip().split()[0]  # ex: "07/04/2025"
+    for el in elementos_small:
+        texto = el.get_text(strip=True)
         try:
-            data = datetime.strptime(texto_data, "%d/%m/%Y").date()
-            texto = cabecalho.text.strip()
-            datas.append((data, texto))
-        except ValueError:
+            data_str = texto.split()[0]  # Pega apenas a parte da data: dd/mm/yyyy
+            data = datetime.strptime(data_str, "%d/%m/%Y").date()
+            texto_completo = el.find_parent().get_text(strip=True)
+            datas.append((data, texto_completo))
+        except (ValueError, IndexError):
             continue
 
     if not datas:
