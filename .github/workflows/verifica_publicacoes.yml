@@ -1,0 +1,31 @@
+name: Verificar Publicações
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # roda todo início de hora (ajuste como quiser)
+  workflow_dispatch:     # permite rodar manualmente também
+
+jobs:
+  check_publicacoes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fazer checkout do código
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Rodar script
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python verifica_publicacoes.py
