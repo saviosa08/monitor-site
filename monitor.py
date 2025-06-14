@@ -20,7 +20,11 @@ def enviar_telegram(msg):
     requests.post(url, data=data)
 
 def ler_estado():
-    return "Algum estado"
+     try:
+        with open("ultima_publicacao.txt", "r") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return ""
 
 def salvar_estado(pub):
     with open("ultima_publicacao.txt", "w") as f:
