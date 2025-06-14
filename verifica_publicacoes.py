@@ -22,13 +22,8 @@ def salvar_nova_data(data):
 
 def enviar_telegram(mensagem):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": mensagem,
-        "parse_mode": "HTML"
-    }
-    response = requests.post(url, data=payload)
-    return response.status_code == 200
+    data = {"chat_id": TELEGRAM_CHAT_ID, "text": msg}
+    requests.post(url, data=data)
 
 def buscar_datas_publicacoes():
     response = requests.get(URL)
