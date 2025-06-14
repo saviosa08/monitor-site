@@ -26,3 +26,11 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python monitor.py
+
+      - name: Commit da nova data (se houver)
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add ultima_data.txt
+          git diff --cached --quiet || git commit -m "Atualiza ultima_data.txt"
+          git push
