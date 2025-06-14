@@ -35,9 +35,9 @@ def get_maior_data():
     soup = BeautifulSoup(resp.text, "html.parser")
 
     datas = []
-    for a in soup.find_all("a"):
-        texto = a.get_text(strip=True)
-        data_str = texto[:10]  # pega os 10 primeiros caracteres para a data dd/mm/yyyy
+    for li in soup.find_all("li"):
+        texto = li.get_text(strip=True)
+        data_str = texto[:10]  # espera data no formato dd/mm/yyyy no início
         try:
             data = datetime.strptime(data_str, "%d/%m/%Y").date()
             print(f"Data encontrada: {data} - texto: {texto}")  # Debug
