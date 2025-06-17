@@ -29,23 +29,24 @@ def enviar_telegram(mensagem):
         "parse_mode": "HTML"
     }
     resp = requests.post(url, data=data)
+    if not resp.ok:
+        print("Erro no envio para o Telegram:", resp.text)
     return resp.ok
 
 def get_maior_data():
-    resp = requests.get(URL)
+    resp = requests.get(URL, headers={"User-Agent": "Mozilla/5.0"})
     soup = BeautifulSoup(resp.text, "html.parser")
 
     datas = []
-    pattern = r"\b\d{2}/\d{2}/\d{4}\b"  # regex para dd/mm/yyyy
+    pattern = r"\b\d{2}/\d{2}/\d{4}\b"  # formato dd/mm/yyyy
 
     for li in soup.find_all("li"):
-        texto = li.get_text(" ", strip=True)  # extrai texto com espaço entre tags para facilitar regex
-        match = re.search(pattern, texto)
-        if match:
-            data_str = match.group()
+        texto = li.get_text(" ", strip=True)
+        matches = re.findall(pattern, texto)
+        for data_str in matches:
             try:
-                data = datetime.strptime(data_str, "%d/%m/%Y").date()
-                print(f"Data encontrada: {data} - texto: {texto}")  # debug
+                data = datetime.strptime(data_str.strip(), "%d/%m/%Y").date()
+                print(f"Data encontrada: {data} - texto: {texto}")
                 datas.append((data, texto))
             except ValueError:
                 continue
@@ -62,6 +63,8 @@ def main():
         return
 
     ultima_data = ler_ultima_data()
+    print(f"Última data salva: {ultima_data}")
+    print(f"Maior data encontrada: {maior_data}")
 
     if maior_data > ultima_data:
         mensagem = (f"🚨 Nova data detectada no IFES:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
