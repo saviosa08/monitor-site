@@ -68,7 +68,6 @@ def main():
 
     if maior_data > ultima_data:
         mensagem = (f"🚨 Nova publicação no site do Banestes:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
-                    f"Descrição: {texto}\n"
                     f"Acesse: {URL}")
         sucesso = enviar_telegram(mensagem)
         if sucesso:
