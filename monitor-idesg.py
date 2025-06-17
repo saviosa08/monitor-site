@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import os
+import re
 
 URL = "https://ps.idesg.org.br/processos_de_selecao/ps.html?detail=41"
 ARQUIVO_DATA = "data_idesg.txt"
@@ -35,13 +36,17 @@ def get_maior_data():
     soup = BeautifulSoup(resp.text, "html.parser")
 
     datas = []
+    pattern = r"\b\d{2}/\d{2}/\d{4}\b"
+
     for div in soup.find_all("div"):
-        texto = div.get_text(strip=True)
-        for palavra in texto.split():
+        texto = div.get_text(" ", strip=True)
+        match = re.search(pattern, texto)
+        if match:
+            data_str = match.group()
             try:
-                if len(palavra) == 10 and palavra[2] == '/' and palavra[5] == '/':
-                    data = datetime.strptime(palavra, "%d/%m/%Y").date()
-                    datas.append((data, texto))
+                data = datetime.strptime(data_str, "%d/%m/%Y").date()
+                print(f"Data encontrada: {data} - texto: {texto}")  # debug
+                datas.append((data, texto))
             except ValueError:
                 continue
 
@@ -57,6 +62,9 @@ def main():
         return
 
     ultima_data = ler_ultima_data()
+
+    print(f"Maior data no site: {maior_data}")
+    print(f"Última data no arquivo: {ultima_data}")
 
     if maior_data > ultima_data:
         mensagem = (f"🚨 Nova data detectada no IDESG:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
