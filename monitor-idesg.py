@@ -38,14 +38,14 @@ def get_maior_data():
     datas = []
     pattern = r"\b\d{2}/\d{2}/\d{4}\b"
 
-    for div in soup.find_all("div"):
-        texto = div.get_text(" ", strip=True)
+    for row in soup.find_all("tr"):
+        texto = row.get_text(" ", strip=True)
         match = re.search(pattern, texto)
         if match:
             data_str = match.group()
             try:
                 data = datetime.strptime(data_str, "%d/%m/%Y").date()
-                print(f"Data encontrada: {data} - texto: {texto}")  # debug
+                print(f"Data encontrada: {data} - texto: {texto}")
                 datas.append((data, texto))
             except ValueError:
                 continue
@@ -62,9 +62,6 @@ def main():
         return
 
     ultima_data = ler_ultima_data()
-
-    print(f"Maior data no site: {maior_data}")
-    print(f"Última data no arquivo: {ultima_data}")
 
     if maior_data > ultima_data:
         mensagem = (f"🚨 Nova data detectada no IDESG:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
