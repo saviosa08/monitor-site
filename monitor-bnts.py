@@ -4,8 +4,8 @@ from datetime import datetime
 import os
 import re
 
-URL = "https://ps.idesg.org.br/processos_de_selecao/ps.html?detail=41"
-ARQUIVO_DATA = "data_idesg.txt"
+URL = "https://www.banestes.com.br/publicacoes_legais/concurso2024.htm"
+ARQUIVO_DATA = "ultima_data_bnts.txt"
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
@@ -34,20 +34,21 @@ def enviar_telegram(mensagem):
 def get_maior_data():
     resp = requests.get(URL)
     soup = BeautifulSoup(resp.text, "html.parser")
+
     datas = []
-
-    pattern = r"\b\d{2}/\d{2}/\d{4}\b"
-
-    for row in soup.find_all("tr"):
-        texto = row.get_text(" ", strip=True)
-        match = re.search(pattern, texto)
-        if match:
-            data_str = match.group()
-            try:
-                data = datetime.strptime(data_str, "%d/%m/%Y").date()
-                datas.append((data, texto))
-            except ValueError:
-                continue
+    for td in soup.find_all("td", class_="dataNoticia"):
+        texto = td.get_text(strip=True)
+        try:
+            data = datetime.strptime(texto, "%d.%m.%y").date()
+            print(f"Data encontrada: {data} - texto: {texto}")
+            linha = td.find_parent("tr")
+            if linha:
+                descricao = linha.get_text(" ", strip=True)
+            else:
+                descricao = "Nova publicação no site do Banestes"
+            datas.append((data, descricao))
+        except ValueError:
+            continue
 
     if not datas:
         return None, None
@@ -63,7 +64,7 @@ def main():
     ultima_data = ler_ultima_data()
 
     if maior_data > ultima_data:
-        mensagem = (f"🚨 Nova data detectada no IDESG:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
+        mensagem = (f"🚨 Nova publicação no site do Banestes:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
                     f"Descrição: {texto}\n"
                     f"Acesse: {URL}")
         sucesso = enviar_telegram(mensagem)
