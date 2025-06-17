@@ -2,7 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import os
-import re
 
 URL = "https://www.banestes.com.br/publicacoes_legais/concurso2024.htm"
 ARQUIVO_DATA = "ultima_data_bnts.txt"
@@ -63,8 +62,13 @@ def main():
 
     ultima_data = ler_ultima_data()
 
+    if ultima_data > maior_data:
+        print("Data no arquivo é mais recente que a data do site. Ignorando.")
+        return
+
     if maior_data > ultima_data:
         mensagem = (f"🚨 Nova publicação no site do Banestes:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
+                    f"Descrição: {texto}\n"
                     f"Acesse: {URL}")
         sucesso = enviar_telegram(mensagem)
         if sucesso:
