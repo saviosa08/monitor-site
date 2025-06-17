@@ -34,8 +34,8 @@ def enviar_telegram(mensagem):
 def get_maior_data():
     resp = requests.get(URL)
     soup = BeautifulSoup(resp.text, "html.parser")
-
     datas = []
+
     pattern = r"\b\d{2}/\d{2}/\d{4}\b"
 
     for row in soup.find_all("tr"):
@@ -45,7 +45,6 @@ def get_maior_data():
             data_str = match.group()
             try:
                 data = datetime.strptime(data_str, "%d/%m/%Y").date()
-                print(f"Data encontrada: {data} - texto: {texto}")
                 datas.append((data, texto))
             except ValueError:
                 continue
