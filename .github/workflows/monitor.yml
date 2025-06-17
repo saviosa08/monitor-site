@@ -28,4 +28,3 @@ jobs:
         run: |
              python monitor.py
              python monitor-ifes.py
-             python monitor-bnts.py
