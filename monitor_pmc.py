@@ -4,8 +4,8 @@ from datetime import datetime
 import os
 import re
 
-URL_SITE = "https://ps.idesg.org.br/processos_de_selecao/ps.html?detail=41"
-URL = "https://ps.idesg.org.br/include/php/ajax.php?funcao_=load_publicacoes&id_concurso=41"
+URL = "https://ps.idesg.org.br/processos_de_selecao/ps.html?detail=41"
+API_URL = "https://ps.idesg.org.br/include/php/ajax.php?funcao_=load_publicacoes&id_concurso=41"
 ARQUIVO_DATA = "data_pmc.txt"
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
@@ -35,7 +35,7 @@ def enviar_telegram(mensagem):
     return resp.ok
 
 def get_maior_data():
-    resp = requests.get(URL, headers={"User-Agent": "Mozilla/5.0"})
+    resp = requests.get(API_URL, headers={"User-Agent": "Mozilla/5.0"})
     soup = BeautifulSoup(resp.text, "html.parser")
 
     datas = []
@@ -60,7 +60,7 @@ def get_maior_data():
 def main():
     maior_data, texto = get_maior_data()
     if maior_data is None:
-        print("Nenhuma data encontrada no site.")
+        print("Nenhuma data encontrada.")
         return
 
     ultima_data = ler_ultima_data()
@@ -69,7 +69,8 @@ def main():
 
     if maior_data > ultima_data:
         mensagem = (f"🚨 Nova data detectada no IDESG:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
-                    f"Acesse: {URL_SITE}")
+                    f"Descrição: {texto}\n"
+                    f"Acesse: {URL}")
         sucesso = enviar_telegram(mensagem)
         if sucesso:
             print("Mensagem enviada com sucesso.")
