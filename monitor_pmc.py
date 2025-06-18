@@ -4,7 +4,8 @@ from datetime import datetime
 import os
 import re
 
-URL = "https://ps.idesg.org.br/processos_de_selecao/ps.html?detail=41"
+URL_SITE = "https://ps.idesg.org.br/processos_de_selecao/ps.html?detail=41"
+URL = "https://ps.idesg.org.br/include/php/ajax.php?funcao_=load_publicacoes&id_concurso=41"
 ARQUIVO_DATA = "data_pmc.txt"
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
@@ -68,8 +69,7 @@ def main():
 
     if maior_data > ultima_data:
         mensagem = (f"🚨 Nova data detectada no IDESG:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
-                    f"Descrição: {texto}\n"
-                    f"Acesse: {URL}")
+                    f"Acesse: {URL_SITE}")
         sucesso = enviar_telegram(mensagem)
         if sucesso:
             print("Mensagem enviada com sucesso.")
