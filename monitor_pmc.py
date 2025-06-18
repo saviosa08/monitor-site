@@ -74,7 +74,7 @@ def main():
 
     if maior_data > ultima_data:
         mensagem = (f"🚨 Nova data detectada no IDESG:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
-                    f"Acesse: {API}")
+                    f"Acesse: {URL}")
         sucesso = enviar_telegram(mensagem)
         if sucesso:
             print("Mensagem enviada com sucesso.")
