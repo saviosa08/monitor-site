@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import os
 import re
+import html
 
 URL = "https://ps.idesg.org.br/processos_de_selecao/ps.html?detail=41"
 API_URL = "https://ps.idesg.org.br/include/php/ajax.php?funcao_=load_publicacoes&id_concurso=41"
@@ -36,7 +37,11 @@ def enviar_telegram(mensagem):
 
 def get_maior_data():
     resp = requests.get(API_URL, headers={"User-Agent": "Mozilla/5.0"})
-    soup = BeautifulSoup(resp.text, "html.parser")
+
+    # Decodifica HTML e remove barras invertidas
+    html_text = html.unescape(resp.text.replace("\\/", "/"))
+
+    soup = BeautifulSoup(html_text, "html.parser")
 
     datas = []
     pattern = r"\b\d{2}/\d{2}/\d{4}\b"
@@ -69,8 +74,7 @@ def main():
 
     if maior_data > ultima_data:
         mensagem = (f"🚨 Nova data detectada no IDESG:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
-                    f"Descrição: {texto}\n"
-                    f"Acesse: {URL}")
+                    f"Acesse: {API_URL}")
         sucesso = enviar_telegram(mensagem)
         if sucesso:
             print("Mensagem enviada com sucesso.")
