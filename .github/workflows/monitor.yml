@@ -2,7 +2,7 @@ name: Verificar novas publicações
 
 on:
   schedule:
-    - cron: "*/5 11-21 * * *"    # a cada 30m
+    - cron: "*/20 11-21 * * *"    # a cada 30m
   workflow_dispatch:          # roda manualmente, se quiser
 
 jobs:
