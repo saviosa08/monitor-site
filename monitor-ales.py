@@ -1,57 +1,57 @@
 import requests
-from bs4 import BeautifulSoup
 import os
-import re
 
-URL = "https://novo.ibgpconcursos.com.br/inscricoes_abertas.jsp"
+URL = "https://novo.ibgpconcursos.com.br/rest/concurso/inscricaoAberta"
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
+PALAVRAS_CHAVE = ["ASSEMBLEIA", "LEGISLATIVA", "ESPÍRITO SANTO", "ALES", "/ES"]
+
 def enviar_telegram(mensagem):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    data = {"chat_id": TELEGRAM_CHAT_ID, "text": mensagem, "parse_mode": "HTML"}
+    data = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": mensagem,
+        "parse_mode": "HTML"
+    }
     resp = requests.post(url, data=data)
     if not resp.ok:
-        print("Erro no envio para o Telegram:", resp.text)
+        print("Erro ao enviar mensagem:", resp.text)
     return resp.ok
 
-def verificar_assembleia():
+def verificar_concurso_ales():
     try:
-        resp = requests.get(URL, headers={"User-Agent": "Mozilla/5.0"})
-        resp.raise_for_status()
+        response = requests.get(URL)
+        concursos = response.json()
     except Exception as e:
-        print("Erro ao acessar o site:", e)
-        return False, None
+        print("Erro ao acessar API:", e)
+        return []
 
-    soup = BeautifulSoup(resp.text, "html.parser")
-
-    padrao = re.compile(r"\b(MG)\b", re.IGNORECASE)
     encontrados = []
+    for concurso in concursos:
+        if not concurso.get("statusInscricao"):
+            continue
+        nome_concurso = concurso.get("nome", "").upper()
+        nome_orgao = concurso.get("empresa", {}).get("nome", "").upper()
 
-    for h2 in soup.find_all("h2"):
-        texto = h2.get_text(strip=True)
-        if padrao.search(texto):
+        texto = f"{nome_concurso} - {nome_orgao}"
+
+        if any(palavra in texto for palavra in PALAVRAS_CHAVE):
             encontrados.append(texto)
 
-    if encontrados:
-        return True, list(dict.fromkeys(encontrados))  # remove duplicatas
-    else:
-        return False, None
+    return encontrados
 
 def main():
-    aberto, titulos = verificar_assembleia()
-    if aberto:
-        linhas = "\n".join(f"- {t}" for t in titulos)
+    concursos_encontrados = verificar_concurso_ales()
+    if concursos_encontrados:
+        linhas = "\n".join(f"• {nome}" for nome in concursos_encontrados)
         mensagem = (
-            "🚨 Inscrições abertas detectadas para *Assembleia Legislativa ES*:\n\n"
-            f"🔎 Acesse: {URL}"
+            "🚨 Concurso com inscrições abertas identificado para a Assembleia Legislativa do ES:\n\n"
+            "🔗 <a href='https://novo.ibgpconcursos.com.br/inscricoes_abertas.jsp'>Acesse o site</a>"
         )
-        if enviar_telegram(mensagem):
-            print("Mensagem enviada com sucesso.")
-        else:
-            print("Erro ao enviar mensagem.")
+        enviar_telegram(mensagem)
     else:
-        print("Nenhuma inscrição da AL ES encontrada.")
+        print("Nenhum concurso da Assembleia Legislativa do ES encontrado.")
 
 if __name__ == "__main__":
     main()
