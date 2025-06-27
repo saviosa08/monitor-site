@@ -25,7 +25,7 @@ def verificar_assembleia():
 
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    padrao = re.compile(r"\b(/AR|-GO)\b", re.IGNORECASE)
+    padrao = re.compile(r"\b(MG)\b", re.IGNORECASE)
     encontrados = []
 
     for h2 in soup.find_all("h2"):
