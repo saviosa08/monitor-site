@@ -5,7 +5,7 @@ URL = "https://novo.ibgpconcursos.com.br/rest/concurso/inscricaoAberta"
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-PALAVRAS_CHAVE = ["ASSEMBLEIA", "LEGISLATIVA", "ESPÍRITO SANTO", "ALES", "/ES", "-GO"]
+PALAVRAS_CHAVE = ["ASSEMBLEIA", "LEGISLATIVA", "ESPÍRITO SANTO", "ALES", "/ES"]
 
 def enviar_telegram(mensagem):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
