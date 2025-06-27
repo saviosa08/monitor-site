@@ -30,3 +30,4 @@ jobs:
              python monitor-ifes.py
              python monitor-bnts.py
              python monitor_pmc.py
+             python monitor-ales.py
