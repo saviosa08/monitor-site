@@ -31,3 +31,4 @@ jobs:
              python monitor-bnts.py
              python monitor_pmc.py
              python monitor-ales.py
+             python monitor-tjes.py
