@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+import re
 import os
 
 URL = "https://www.tjes.jus.br/portal-transparencia/pessoal/contratacao-temporaria/"
@@ -30,41 +31,22 @@ def enviar_telegram(mensagem):
     resp = requests.post(url, data=data)
     return resp.ok
 
-def get_maior_data():
+def get_data_atualizacao():
     resp = requests.get(URL)
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    datas = []
     for td in soup.find_all("td"):
         texto = td.get_text(strip=True)
-        try:
-            # Tenta converter para data nos formatos mais comuns
-            for formato in ["%d/%m/%Y", "%d.%m.%Y", "%d/%m/%y"]:
-                try:
-                    data = datetime.strptime(texto, formato).date()
-                    break
-                except ValueError:
-                    continue
-            else:
-                continue  # Nenhum formato bateu
-
-            print(f"Data encontrada: {data} - texto: {texto}")
-            linha = td.find_parent("tr")
-            if linha:
-                descricao = linha.get_text(" ", strip=True)
-            else:
-                descricao = "Nova publicação no site do TJES"
-            datas.append((data, descricao))
-        except Exception:
-            continue
-
-    if not datas:
-        return None, None
-
-    return max(datas, key=lambda x: x[0])
+        if "última atualização" in texto.lower():
+            match = re.search(r"(\d{2}/\d{2}/\d{4})", texto)
+            if match:
+                data = datetime.strptime(match.group(1), "%d/%m/%Y").date()
+                print(f"Data encontrada: {data} - texto: {texto}")
+                return data, texto
+    return None, None
 
 def main():
-    maior_data, texto = get_maior_data()
+    maior_data, texto = get_data_atualizacao()
     if maior_data is None:
         print("Nenhuma data encontrada no site.")
         return
@@ -72,11 +54,11 @@ def main():
     ultima_data = ler_ultima_data()
 
     if ultima_data > maior_data:
-        print("Data no arquivo é mais recente que a data do site. Ignorando.")
+        print("Data no arquivo é mais recente que a do site. Ignorando.")
         return
 
     if maior_data > ultima_data:
-        mensagem = (f"📌 Nova publicação no site do TJES:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
+        mensagem = (f"📢 Atualização no site do TJES:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
                     f"Acesse: {URL}")
         sucesso = enviar_telegram(mensagem)
         if sucesso:
@@ -85,7 +67,7 @@ def main():
         else:
             print("Erro ao enviar mensagem no Telegram.")
     else:
-        print("Nenhuma data nova TJES.")
+        print("Nenhuma atualização nova.")
 
 if __name__ == "__main__":
     main()
