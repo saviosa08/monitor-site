@@ -85,7 +85,7 @@ def main():
         else:
             print("Erro ao enviar mensagem no Telegram.")
     else:
-        print("Nenhuma data nova.")
+        print("Nenhuma data nova TJES.")
 
 if __name__ == "__main__":
     main()
