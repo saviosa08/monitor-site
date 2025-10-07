@@ -29,4 +29,3 @@ jobs:
              python monitor.py
              python monitor-ifes.py
              python monitor-bnts.py
-             python monitor-tjes.py
