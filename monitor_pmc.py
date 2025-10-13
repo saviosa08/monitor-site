@@ -4,12 +4,14 @@ from datetime import datetime
 import os
 import re
 
+# Configurações
 URL = "https://www.cariacica.es.gov.br/documento/ver/36/detalhes"
 ARQUIVO_DATA = "data_pmc.txt"
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
 def ler_ultima_data():
+    """Lê a última data salva no arquivo local."""
     try:
         with open(ARQUIVO_DATA, "r") as f:
             data_str = f.read().strip()
@@ -18,10 +20,12 @@ def ler_ultima_data():
         return datetime.min.date()
 
 def salvar_data(data):
+    """Grava a nova data no arquivo local."""
     with open(ARQUIVO_DATA, "w") as f:
         f.write(data.strftime("%d/%m/%Y"))
 
 def enviar_telegram(mensagem):
+    """Envia mensagem via bot do Telegram."""
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     data = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -32,20 +36,20 @@ def enviar_telegram(mensagem):
     return resp.ok
 
 def get_maior_data():
+    """Busca todas as datas no HTML e retorna a mais recente."""
     resp = requests.get(URL)
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    padrao_data = re.compile(r"\b(\d{2}/\d{2}/\d{4})\b")
+    padrao_data = re.compile(r"^\d{2}/\d{2}/\d{4}$")
     datas_encontradas = []
 
     for td in soup.find_all("td"):
         texto = td.get_text(strip=True)
-        correspondencias = padrao_data.findall(texto)
-        for data_str in correspondencias:
+        if padrao_data.match(texto):  # casa exatamente com o formato dd/mm/yyyy
             try:
-                data = datetime.strptime(data_str, "%d/%m/%Y").date()
+                data = datetime.strptime(texto, "%d/%m/%Y").date()
                 datas_encontradas.append(data)
-                print(f"Data encontrada: {data} - texto: {texto}")
+                print(f"Data encontrada: {data}")
             except ValueError:
                 continue
 
@@ -55,6 +59,7 @@ def get_maior_data():
     return max(datas_encontradas)
 
 def main():
+    """Executa a verificação de nova publicação."""
     maior_data_site = get_maior_data()
     if not maior_data_site:
         print("Nenhuma data encontrada no site.")
@@ -64,9 +69,11 @@ def main():
     print(f"Última data registrada: {ultima_data}, maior data no site: {maior_data_site}")
 
     if maior_data_site > ultima_data:
-        mensagem = (f"📢 Nova publicação no site da Prefeitura de Cariacica:\n"
-                    f"<b>{maior_data_site.strftime('%d/%m/%Y')}</b>\n"
-                    f"Acesse: {URL}")
+        mensagem = (
+            f"📢 Nova publicação no site da Prefeitura de Cariacica!\n"
+            f"<b>Data de publicação:</b> {maior_data_site.strftime('%d/%m/%Y')}\n\n"
+            f"Acesse: {URL}"
+        )
         sucesso = enviar_telegram(mensagem)
         if sucesso:
             print("Mensagem enviada com sucesso.")
