@@ -28,4 +28,4 @@ jobs:
         run: |
              python monitor-ifes.py
              python monitor-bnts.py
-             monitor_pmc.py
+             python monitor_pmc.py
