@@ -2,11 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import os
-import re
-import html
 
-URL = "https://ps.idesg.org.br/processos_de_selecao/ps.html?detail=41"
-API_URL = "https://ps.idesg.org.br/include/php/ajax.php?funcao_=load_publicacoes&id_concurso=41"
+URL = "https://www.cariacica.es.gov.br/documento/ver/36/detalhes"
 ARQUIVO_DATA = "data_pmc.txt"
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
@@ -31,58 +28,58 @@ def enviar_telegram(mensagem):
         "parse_mode": "HTML"
     }
     resp = requests.post(url, data=data)
-    if not resp.ok:
-        print("Erro no envio para o Telegram:", resp.text)
     return resp.ok
 
-def get_maior_data():
-    resp = requests.get(API_URL, headers={"User-Agent": "Mozilla/5.0"})
+def get_data_publicacao():
+    resp = requests.get(URL)
+    soup = BeautifulSoup(resp.text, "html.parser")
 
-    # Decodifica HTML e remove barras invertidas
-    html_text = html.unescape(resp.text.replace("\\/", "/"))
+    # Procura o elemento que contém "Data de publicação"
+    label = soup.find(string=lambda t: "Data de publicação" in t)
+    if not label:
+        print("Campo 'Data de publicação' não encontrado.")
+        return None
 
-    soup = BeautifulSoup(html_text, "html.parser")
+    # O valor costuma estar no elemento <td> seguinte ou em um <strong>
+    td = label.find_parent("td") if hasattr(label, "find_parent") else None
+    if td:
+        proximo_td = td.find_next_sibling("td")
+        if proximo_td:
+            data_texto = proximo_td.get_text(strip=True)
+        else:
+            data_texto = td.get_text(strip=True)
+    else:
+        data_texto = label.strip()
 
-    datas = []
-    pattern = r"\b\d{2}/\d{2}/\d{4}\b"
-
-    for div in soup.find_all("div"):
-        texto = div.get_text(strip=True)
-        matches = re.findall(pattern, texto)
-        for data_str in matches:
-            try:
-                data = datetime.strptime(data_str, "%d/%m/%Y").date()
-                print(f"Data encontrada: {data} - texto: {texto}")
-                datas.append((data, texto))
-            except ValueError:
-                continue
-
-    if not datas:
-        return None, None
-
-    return max(datas, key=lambda x: x[0])
+    # Ajusta formato para converter corretamente
+    try:
+        data_publicacao = datetime.strptime(data_texto, "%d/%m/%Y").date()
+        print(f"Data de publicação encontrada: {data_publicacao}")
+        return data_publicacao
+    except ValueError:
+        print(f"Formato de data inválido: {data_texto}")
+        return None
 
 def main():
-    maior_data, texto = get_maior_data()
-    if maior_data is None:
-        print("Nenhuma data encontrada.")
+    data_site = get_data_publicacao()
+    if data_site is None:
+        print("Nenhuma data encontrada no site.")
         return
 
     ultima_data = ler_ultima_data()
-    print(f"Última data salva: {ultima_data}")
-    print(f"Maior data encontrada: {maior_data}")
 
-    if maior_data > ultima_data:
-        mensagem = (f"🚨 Nova data detectada no IDESG:\n<b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
+    if data_site > ultima_data:
+        mensagem = (f"📢 Nova publicação no site da Prefeitura de Cariacica:\n"
+                    f"<b>{data_site.strftime('%d/%m/%Y')}</b>\n"
                     f"Acesse: {URL}")
         sucesso = enviar_telegram(mensagem)
         if sucesso:
             print("Mensagem enviada com sucesso.")
-            salvar_data(maior_data)
+            salvar_data(data_site)
         else:
             print("Erro ao enviar mensagem no Telegram.")
     else:
-        print("Nenhuma data nova.")
+        print("Nenhuma nova publicação encontrada.")
 
 if __name__ == "__main__":
     main()
