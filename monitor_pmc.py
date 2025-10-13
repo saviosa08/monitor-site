@@ -5,7 +5,7 @@ import os
 import re
 
 # Configurações
-URL = "https://www.cariacica.es.gov.br/documento/ver/36/detalhes"
+URL = "https://www.cariacica.es.gov.br/documento/ver/36"
 ARQUIVO_DATA = "data_pmc.txt"
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")  # pode ser None se não usar Telegram
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
