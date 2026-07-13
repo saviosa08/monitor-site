@@ -75,8 +75,8 @@ def get_maior_data():
 
 def main():
 
-    # maior_data = get_maior_data()
-    maior_data = datetime.strptime("10/07/2026", "%d/%m/%Y").date()
+    maior_data = get_maior_data()
+    # maior_data = datetime.strptime("10/07/2026", "%d/%m/%Y").date()
 
     if maior_data is None:
         print("Não foi possível localizar nenhuma data.")
