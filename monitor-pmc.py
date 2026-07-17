@@ -38,11 +38,47 @@ def enviar_telegram(mensagem):
 
 
 def get_maior_data():
+    session = requests.Session()
+
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/138.0.0.0 Safari/537.36"
+        ),
+        "Accept": (
+            "text/html,application/xhtml+xml,application/xml;q=0.9,"
+            "image/avif,image/webp,*/*;q=0.8"
+        ),
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Referer": "https://cariacica.es.gov.br/",
     }
 
-    resp = requests.get(URL, headers=headers)
+    # Primeira visita para obter cookies
+    session.get(
+        "https://cariacica.es.gov.br/",
+        headers=headers,
+        timeout=30
+    )
+
+    # Acessa a página desejada
+    resp = session.get(
+        URL,
+        headers=headers,
+        timeout=30
+    )
+
+    print("=" * 60)
+    print("Status:", resp.status_code)
+    print("URL:", resp.url)
+    print("=" * 60)
+
+    if resp.status_code != 200:
+        print(resp.text[:1000])
+
     resp.raise_for_status()
 
     soup = BeautifulSoup(resp.text, "html.parser")
@@ -50,11 +86,13 @@ def get_maior_data():
     tabela = soup.find("table", class_="table-anexos")
 
     if not tabela:
+        print("Tabela não encontrada.")
         return None, None
 
     tbody = tabela.find("tbody")
 
     if not tbody:
+        print("TBody não encontrado.")
         return None, None
 
     datas = []
@@ -62,10 +100,6 @@ def get_maior_data():
     for tr in tbody.find_all("tr"):
         tds = tr.find_all("td")
 
-        # Esperado:
-        # td[0] = descrição
-        # td[1] = data
-        # td[2] = botão visualizar
         if len(tds) < 2:
             continue
 
@@ -116,7 +150,6 @@ def main():
             # salvar_data(maior_data)
         else:
             print("Erro ao enviar mensagem no Telegram.")
-
     else:
         print("Nenhuma data nova.")
 
