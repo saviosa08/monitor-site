@@ -113,7 +113,7 @@ def main():
 
         if sucesso:
             print("Mensagem enviada com sucesso.")
-            salvar_data(maior_data)
+            # salvar_data(maior_data)
         else:
             print("Erro ao enviar mensagem no Telegram.")
 
