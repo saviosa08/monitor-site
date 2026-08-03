@@ -1,5 +1,4 @@
 import os
-import re
 from datetime import datetime
 
 import requests
@@ -12,7 +11,6 @@ ARQUIVO_DATA = "dt_mpes.txt"
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-# Data inicial para considerar publicações
 DATA_MINIMA = datetime.strptime("01/08/2026", "%d/%m/%Y").date()
 
 
@@ -20,7 +18,7 @@ def ler_ultima_data():
     try:
         with open(ARQUIVO_DATA, "r") as f:
             return datetime.strptime(f.read().strip(), "%d/%m/%Y").date()
-    except:
+    except (FileNotFoundError, ValueError):
         return DATA_MINIMA
 
 
@@ -29,19 +27,16 @@ def salvar_data(data):
         f.write(data.strftime("%d/%m/%Y"))
 
 
-def enviar_telegram(msg):
+def enviar_telegram(mensagem):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
-    resp = requests.post(
-        url,
-        data={
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": msg,
-            "parse_mode": "HTML",
-        },
-    )
+    data = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": mensagem,
+        "parse_mode": "HTML",
+    }
 
-    return resp.ok
+    return requests.post(url, data=data).ok
 
 
 def get_maior_data():
@@ -50,49 +45,66 @@ def get_maior_data():
         "User-Agent": "Mozilla/5.0"
     }
 
-    resp = requests.get(URL, headers=headers, timeout=30)
+    resp = requests.get(URL, headers=headers)
     resp.raise_for_status()
 
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    texto = soup.get_text(" ", strip=True)
+    publicacoes = []
 
-    datas = []
+    for bloco in soup.select("div.paragraph--type--texto-data"):
 
-    for match in re.findall(r"\d{2}/\d{2}/\d{4}", texto):
+        time_tag = bloco.find("time")
+
+        if not time_tag:
+            continue
+
         try:
-            data = datetime.strptime(match, "%d/%m/%Y").date()
+            data = datetime.strptime(
+                time_tag.get_text(strip=True),
+                "%d/%m/%Y"
+            ).date()
+        except ValueError:
+            continue
 
-            if data > DATA_MINIMA:
-                datas.append(data)
+        if data <= DATA_MINIMA:
+            continue
 
-        except:
-            pass
+        campo_texto = bloco.select_one(".field--name-field-td-texto")
 
-    if not datas:
-        return None
+        if campo_texto:
+            descricao = campo_texto.get_text(" ", strip=True)
+        else:
+            descricao = "Nova publicação"
 
-    return max(datas)
+        publicacoes.append((data, descricao))
+
+    if not publicacoes:
+        return None, None
+
+    return max(publicacoes, key=lambda x: x[0])
 
 
 def main():
 
-    maior_data = get_maior_data()
+    maior_data, descricao = get_maior_data()
 
     if maior_data is None:
-        print("Nenhuma publicação mais recente encontrada.")
+        print("Nenhuma publicação encontrada.")
         return
 
     ultima_data = ler_ultima_data()
 
-    print("Última salva:", ultima_data)
-    print("Maior encontrada:", maior_data)
+    if ultima_data > maior_data:
+        print("Data do arquivo é mais recente.")
+        return
 
     if maior_data > ultima_data:
 
         mensagem = (
-            "🚨 <b>Nova publicação encontrada no concurso MPES 2026 (FGV)</b>\n\n"
-            f"📅 {maior_data.strftime('%d/%m/%Y')}\n\n"
+            "🚨 <b>Nova publicação no concurso MPES 2026 (FGV)</b>\n\n"
+            f"📅 <b>{maior_data.strftime('%d/%m/%Y')}</b>\n"
+            f"📄 {descricao}\n\n"
             f"{URL}"
         )
 
@@ -101,7 +113,6 @@ def main():
             salvar_data(maior_data)
         else:
             print("Erro ao enviar mensagem.")
-
     else:
         print("Nenhuma atualização.")
 
