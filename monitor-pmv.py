@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 import os
 
-URL = "https://www.institutoconsulplan.org.br/Concurso/z3barr3DDJCL9q1a1xZbPKcfQ%3D%3D"
+URL = "https://www.institutoconsulplan.org.br/OC2XhfaSAlbarrSPiDfhMQqHA=="
 
 ARQUIVO_DATA = "ultima_data_pmv.txt"
 
