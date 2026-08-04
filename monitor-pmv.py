@@ -2,6 +2,7 @@ import requests
 import re
 from datetime import datetime
 import os
+from bs4 import BeautifulSoup
 
 URL = "https://www.institutoconsulplan.org.br/OC2XhfaSAlbarrSPiDfhMQqHA=="
 
@@ -46,29 +47,33 @@ def get_maior_data():
     resp = requests.get(URL, headers=headers, timeout=30)
 
     print("Status:", resp.status_code)
-    print("URL Final:", resp.url)
 
     if resp.status_code != 200:
         return None
 
-    html = resp.text
+    soup = BeautifulSoup(resp.text, "html.parser")
 
     datas = []
 
-    # procura todas as datas no formato dd/mm/aaaa
-    encontrados = re.findall(r"\b\d{2}/\d{2}/\d{4}\b", html)
+    # percorre todos os links da página
+    for a in soup.find_all("a"):
 
-    for texto in encontrados:
-        try:
-            data = datetime.strptime(texto, "%d/%m/%Y").date()
-            print(f"Data encontrada: {data}")
-            datas.append(data)
-        except ValueError:
-            pass
+        texto = a.get_text(strip=True)
+
+        if re.fullmatch(r"\d{2}/\d{2}/\d{4}", texto):
+
+            try:
+                data = datetime.strptime(texto, "%d/%m/%Y").date()
+                print("Data encontrada:", data)
+                datas.append(data)
+            except ValueError:
+                pass
 
     if not datas:
-        print("Nenhuma data encontrada no HTML.")
+        print("Nenhuma data encontrada.")
         return None
+
+    print("Maior data:", max(datas))
 
     return max(datas)
 
