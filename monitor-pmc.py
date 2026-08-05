@@ -1,7 +1,8 @@
+import os
+from datetime import datetime
+
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
-import os
 
 URL = "https://cariacica.es.gov.br/documento/ver/36/detalhes"
 ARQUIVO_DATA = "ultima_data_pmc.txt"
@@ -13,8 +14,7 @@ TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 def ler_ultima_data():
     try:
         with open(ARQUIVO_DATA, "r") as f:
-            data_str = f.read().strip()
-            return datetime.strptime(data_str, "%d/%m/%Y").date()
+            return datetime.strptime(f.read().strip(), "%d/%m/%Y").date()
     except (FileNotFoundError, ValueError):
         return datetime.min.date()
 
@@ -27,17 +27,21 @@ def ler_ultima_data():
 def enviar_telegram(mensagem):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
-    data = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": mensagem,
-        "parse_mode": "HTML"
-    }
+    resp = requests.post(
+        url,
+        data={
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": mensagem,
+            "parse_mode": "HTML",
+        },
+        timeout=30,
+    )
 
-    resp = requests.post(url, data=data)
     return resp.ok
 
 
 def get_maior_data():
+
     session = requests.Session()
 
     headers = {
@@ -46,58 +50,66 @@ def get_maior_data():
             "AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/138.0.0.0 Safari/537.36"
         ),
-        "Accept": (
-            "text/html,application/xhtml+xml,application/xml;q=0.9,"
-            "image/avif,image/webp,*/*;q=0.8"
-        ),
-        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8",
         "Referer": "https://cariacica.es.gov.br/",
     }
 
-    # Primeira visita para obter cookies
+    # Obtém cookies
     session.get(
         "https://cariacica.es.gov.br/",
         headers=headers,
-        timeout=30
+        timeout=30,
     )
 
-    # Acessa a página desejada
     resp = session.get(
         URL,
         headers=headers,
-        timeout=30
+        timeout=30,
     )
 
-    print("=" * 60)
+    print("=" * 80)
     print("Status:", resp.status_code)
-    print("URL:", resp.url)
-    print("=" * 60)
-
-    if resp.status_code != 200:
-        print(resp.text[:1000])
+    print("URL Final:", resp.url)
+    print("Content-Type:", resp.headers.get("Content-Type"))
+    print("=" * 80)
 
     resp.raise_for_status()
 
+    # Salva exatamente o HTML recebido
+    with open("debug.html", "w", encoding="utf-8") as f:
+        f.write(resp.text)
+
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    tabela = soup.find("table", class_="table-anexos")
+    tabelas = soup.find_all("table")
+    print(f"Foram encontradas {len(tabelas)} tabela(s).")
 
-    if not tabela:
-        print("Tabela não encontrada.")
+    # Procura pela tabela desejada
+    tabela = soup.select_one("table.table-anexos")
+
+    if tabela is None:
+        print("Tabela 'table-anexos' não encontrada.")
+
+        print("\nClasses das tabelas encontradas:\n")
+        for i, t in enumerate(tabelas, start=1):
+            print(f"Tabela {i}: {t.get('class')}")
+
+        print("\nPrimeiros 3000 caracteres do HTML recebido:\n")
+        print(resp.text[:3000])
+
         return None, None
 
     tbody = tabela.find("tbody")
 
-    if not tbody:
-        print("TBody não encontrado.")
+    if tbody is None:
+        print("tbody não encontrado.")
         return None, None
 
     datas = []
 
     for tr in tbody.find_all("tr"):
+
         tds = tr.find_all("td")
 
         if len(tds) < 2:
@@ -109,7 +121,7 @@ def get_maior_data():
         try:
             data = datetime.strptime(data_str, "%d/%m/%Y").date()
 
-            print(f"Data encontrada: {data} - {descricao}")
+            print(f"{data} -> {descricao}")
 
             datas.append((data, descricao))
 
@@ -117,39 +129,49 @@ def get_maior_data():
             continue
 
     if not datas:
+        print("Nenhuma data válida encontrada.")
         return None, None
 
-    return max(datas, key=lambda x: x[0])
+    maior_data, descricao = max(datas, key=lambda x: x[0])
+
+    print("\nMaior data:", maior_data)
+    print("Documento:", descricao)
+
+    return maior_data, descricao
 
 
 def main():
+
     maior_data, descricao = get_maior_data()
 
     if maior_data is None:
-        print("Nenhuma data encontrada no site.")
+        print("Nenhuma data encontrada.")
         return
 
     ultima_data = ler_ultima_data()
 
+    print("Última data salva :", ultima_data)
+    print("Maior data do site:", maior_data)
+
     if ultima_data > maior_data:
-        print("Data no arquivo é mais recente que a data do site. Ignorando.")
+        print("Data do arquivo é mais recente.")
         return
 
     if maior_data > ultima_data:
+
         mensagem = (
             f"🚨 <b>Nova publicação - Prefeitura de Cariacica</b>\n\n"
             f"<b>Data:</b> {maior_data.strftime('%d/%m/%Y')}\n"
             f"<b>Documento:</b> {descricao}\n\n"
-            f"Acesse: {URL}"
+            f"{URL}"
         )
 
-        sucesso = enviar_telegram(mensagem)
-
-        if sucesso:
-            print("Mensagem enviada com sucesso.")
+        if enviar_telegram(mensagem):
+            print("Mensagem enviada.")
             # salvar_data(maior_data)
         else:
-            print("Erro ao enviar mensagem no Telegram.")
+            print("Erro ao enviar mensagem.")
+
     else:
         print("Nenhuma data nova.")
 
